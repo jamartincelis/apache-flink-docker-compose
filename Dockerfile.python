@@ -1,0 +1,37 @@
+# Usa una imagen base de Ubuntu
+FROM ubuntu:22.04
+
+# Establece variables de entorno para el modo no interactivo
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Actualiza la lista de paquetes e instala dependencias para agregar el PPA
+RUN apt-get update && \
+    apt-get install -y software-properties-common
+
+# Agrega el repositorio "deadsnakes" para obtener versiones más recientes de Python
+RUN add-apt-repository ppa:deadsnakes/ppa
+
+# Actualiza la lista de paquetes nuevamente para incluir el nuevo repositorio
+RUN apt-get update
+
+# Instala OpenJDK 17 y Python 3.12 desde el nuevo repositorio
+RUN apt-get install -y openjdk-17-jdk python3-pip && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+# Crea los enlaces simbólicos para los comandos 'python'
+# python3.10 viene por fecto con ubuntu
+RUN ln -s /usr/bin/python3.10 /usr/bin/python
+
+
+# Establece la variable JAVA_HOME
+# version java que soporta oficialmente flink
+ENV JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
+
+COPY requirements.txt .
+RUN pip3 install --no-cache-dir -r requirements.txt
+
+COPY . .
+
+# Define el comando por defecto para verificar las versiones
+CMD ["bash"]

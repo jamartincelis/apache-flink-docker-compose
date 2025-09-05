@@ -1,0 +1,46 @@
+services:
+  jobmanager:
+    image: flink:latest
+    ports:
+      - "8081:8081"
+      - "6123:6123"
+    command: jobmanager
+    environment:
+      - |
+        FLINK_PROPERTIES=
+        jobmanager.rpc.address: jobmanager
+    volumes:
+      - ./:/opt/flink/app
+      - ./requirements.txt:/opt/flink/requirements.txt
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  taskmanager:
+    image: flink:latest
+    depends_on:
+      jobmanager:
+        condition: service_healthy
+    command: taskmanager
+    scale: 2
+    environment:
+      - |
+        FLINK_PROPERTIES=
+        jobmanager.rpc.address: jobmanager
+        taskmanager.numberOfTaskSlots: 2
+    volumes:
+      - ./:/opt/flink/app
+      - ./requirements.txt:/opt/flink/requirements.txt
+  python-client:
+    build:
+      context: .
+      dockerfile: Dockerfile.python
+    depends_on:
+      - jobmanager
+    volumes:
+      - ./:/app
+    working_dir: /app
+    stdin_open: true
+    tty: true
